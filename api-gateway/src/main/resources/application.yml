@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false  # sin Eureka por ahora
+
+# JWT — mueve esto a .env antes de subir a GitHub
+jwt:
+  secret: ShopFlowSuperSecretKeyQueDebeT enerMinimo256BitsParaHMAC2024
+
+# Actuator — para saber si el gateway está vivo
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+
+# Logs útiles para desarrollo
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
