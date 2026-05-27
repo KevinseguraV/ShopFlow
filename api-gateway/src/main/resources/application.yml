@@ -12,7 +12,7 @@ spring:
 
 # JWT — mueve esto a .env antes de subir a GitHub
 jwt:
-  secret: ShopFlowSuperSecretKeyQueDebeT enerMinimo256BitsParaHMAC2024
+  secret:jwt.secret=ShopFlowSuperSecretKeyQueDebeTenerMinimo256BitsParaHMAC2024
 
 # Actuator — para saber si el gateway está vivo
 management:
