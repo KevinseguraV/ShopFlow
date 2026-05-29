@@ -1,4 +1,17 @@
 package com.shopflow.inventory_service.exception;
 
-public class InventoryException {
+import org.springframework.http.HttpStatus;
+
+public class InventoryException extends RuntimeException {
+
+    private final HttpStatus status;
+
+    public InventoryException(String message, HttpStatus status) {
+        super(message);
+        this.status = status;
+    }
+
+    public HttpStatus getStatus() {
+        return status;
+    }
 }
