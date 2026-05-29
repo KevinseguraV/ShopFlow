@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { getProductByIdRequest } from "../api/catalogApi";
+import { addItemRequest } from "../api/cartApi";
 import { useAuth } from "../context/AuthContext";
 
 function ProductDetail() {
@@ -10,6 +11,8 @@ function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartFeedback, setCartFeedback] = useState(null); // "success" | "error"
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -32,13 +35,36 @@ function ProductDetail() {
       minimumFractionDigits: 0,
     }).format(price);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!user) {
       navigate("/login");
       return;
     }
-    // Se conectará al cart-service en el siguiente paso
-    alert(`Agregado al carrito: ${product.name} x${quantity}`);
+
+    setAddingToCart(true);
+    setCartFeedback(null);
+
+    try {
+      const price = selectedVariant ? selectedVariant.price : product.basePrice;
+      const slug = product.slug ?? product.id;
+
+      await addItemRequest(
+        id,
+        quantity,
+        selectedVariant?.id ?? null,
+        product.name,
+        slug,
+        price
+      );
+      setCartFeedback("success");
+      setTimeout(() => setCartFeedback(null), 3000);
+    } catch (err) {
+      console.error("Error al agregar al carrito:", err);
+      setCartFeedback("error");
+      setTimeout(() => setCartFeedback(null), 3000);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   if (loading) {
@@ -159,13 +185,45 @@ function ProductDetail() {
               </div>
             </div>
 
+            {/* Feedback del carrito */}
+            {cartFeedback === "success" && (
+              <div className="mb-4 flex items-center gap-2 text-green-400 bg-green-400/10 border border-green-400/20 rounded-2xl px-4 py-3 text-sm">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Producto agregado al carrito
+                <button
+                  onClick={() => navigate("/cart")}
+                  className="ml-auto underline hover:no-underline"
+                >
+                  Ver carrito
+                </button>
+              </div>
+            )}
+            {cartFeedback === "error" && (
+              <div className="mb-4 flex items-center gap-2 text-red-400 bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-sm">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                No se pudo agregar al carrito. Intenta de nuevo.
+              </div>
+            )}
+
             {/* Botones */}
             <div className="flex gap-4">
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 transition text-white py-4 rounded-2xl font-semibold text-lg shadow-lg shadow-blue-500/30"
+                disabled={addingToCart}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-white py-4 rounded-2xl font-semibold text-lg shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
               >
-                Agregar al carrito
+                {addingToCart ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Agregando...
+                  </>
+                ) : (
+                  "Agregar al carrito"
+                )}
               </button>
             </div>
           </div>
