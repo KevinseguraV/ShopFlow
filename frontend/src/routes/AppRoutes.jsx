@@ -11,6 +11,9 @@ import Orders from "../pages/Orders";
 import OrderDetail from "../pages/OrderDetail";
 
 import ProtectedRoute from "./ProtectedRoute";
+import AdminRoute from "./AdminRoute";
+
+import AdminDashboard from "../admin/pages/AdminDashboard";
 
 function AppRoutes() {
   return (
@@ -58,6 +61,16 @@ function AppRoutes() {
             <ProtectedRoute>
               <OrderDetail />
             </ProtectedRoute>
+          }
+        />
+
+        {/* ───────── ADMIN ───────── */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           }
         />
 

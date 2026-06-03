@@ -27,18 +27,42 @@ function Navbar() {
 
         {/* LINKS */}
         <div className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
+          <Link
+            to="/"
+            className="text-zinc-400 hover:text-[#FF8C42] transition font-medium"
+          >
             Home
           </Link>
-          <Link to="/products" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
+
+          <Link
+            to="/products"
+            className="text-zinc-400 hover:text-[#FF8C42] transition font-medium"
+          >
             Productos
           </Link>
+
+          {user?.role === "ADMIN" && (
+            <Link
+              to="/admin"
+              className="text-zinc-400 hover:text-[#FF8C42] transition font-medium"
+            >
+              Admin
+            </Link>
+          )}
+
           {user && (
             <>
-              <Link to="/orders" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
+              <Link
+                to="/orders"
+                className="text-zinc-400 hover:text-[#FF8C42] transition font-medium"
+              >
                 Órdenes
               </Link>
-              <Link to="/cart" className="relative text-zinc-400 hover:text-[#FF8C42] transition">
+
+              <Link
+                to="/cart"
+                className="relative text-zinc-400 hover:text-[#FF8C42] transition"
+              >
                 <FaShoppingCart className="text-xl" />
               </Link>
             </>
@@ -53,11 +77,18 @@ function Navbar() {
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FFB347] flex items-center justify-center text-black font-bold text-sm">
                   {user.email?.charAt(0).toUpperCase()}
                 </div>
+
                 <div className="flex flex-col">
-                  <span className="text-white text-sm font-medium">{user.email}</span>
-                  <span className="text-zinc-500 text-xs uppercase tracking-wider">{user.role}</span>
+                  <span className="text-white text-sm font-medium">
+                    {user.email}
+                  </span>
+
+                  <span className="text-zinc-500 text-xs uppercase tracking-wider">
+                    {user.role}
+                  </span>
                 </div>
               </div>
+
               <button
                 onClick={handleLogout}
                 className="border border-white/10 hover:border-[#FF6B35]/50 hover:text-[#FF8C42] transition text-zinc-400 px-5 py-2 rounded-xl text-sm"
@@ -67,9 +98,13 @@ function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
+              <Link
+                to="/login"
+                className="text-zinc-400 hover:text-[#FF8C42] transition font-medium"
+              >
                 Login
               </Link>
+
               <Link
                 to="/register"
                 className="bg-gradient-to-r from-[#FF6B35] to-[#FFB347] hover:opacity-90 transition text-black font-bold px-5 py-2 rounded-xl text-sm shadow-lg shadow-[#FF6B35]/20"
