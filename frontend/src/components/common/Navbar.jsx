@@ -1,8 +1,7 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { FaShoppingCart } from "react-icons/fa";
-
 import { useAuth } from "../../context/AuthContext";
+import logo from "../../assets/shopflow-logo.png";
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -14,51 +13,32 @@ function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/10 backdrop-blur-2xl bg-black/20">
-
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between">
 
         {/* LOGO */}
-        <Link
-          to="/"
-          className="text-3xl font-black text-white tracking-tight"
-        >
-          Shop
-          <span className="text-blue-400">
-            Flow
-          </span>
+        <Link to="/">
+          <img
+            src={logo}
+            alt="ShopFlow"
+            className="h-30 w-auto object-contain"
+          />
         </Link>
 
         {/* LINKS */}
         <div className="hidden md:flex items-center gap-8">
-
-          <Link
-            to="/"
-            className="text-slate-300 hover:text-white transition"
-          >
+          <Link to="/" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
             Home
           </Link>
-
-          <Link
-            to="/products"
-            className="text-slate-300 hover:text-white transition"
-          >
+          <Link to="/products" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
             Productos
           </Link>
-
           {user && (
             <>
-              <Link
-                to="/orders"
-                className="text-slate-300 hover:text-white transition"
-              >
+              <Link to="/orders" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
                 Órdenes
               </Link>
-
-              <Link
-                to="/cart"
-                className="relative text-slate-300 hover:text-white transition"
-              >
+              <Link to="/cart" className="relative text-zinc-400 hover:text-[#FF8C42] transition">
                 <FaShoppingCart className="text-xl" />
               </Link>
             </>
@@ -67,59 +47,42 @@ function Navbar() {
 
         {/* USER */}
         <div className="flex items-center gap-4">
-
           {user ? (
             <>
               <div className="hidden lg:flex items-center gap-3">
-
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-white font-bold">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FFB347] flex items-center justify-center text-black font-bold text-sm">
                   {user.email?.charAt(0).toUpperCase()}
                 </div>
-
                 <div className="flex flex-col">
-                  <span className="text-white text-sm font-medium">
-                    {user.email}
-                  </span>
-
-                  <span className="text-slate-400 text-xs">
-                    {user.role}
-                  </span>
+                  <span className="text-white text-sm font-medium">{user.email}</span>
+                  <span className="text-zinc-500 text-xs uppercase tracking-wider">{user.role}</span>
                 </div>
-
               </div>
-
               <button
                 onClick={handleLogout}
-                className="bg-white/10 border border-white/10 hover:bg-white/20 transition text-white px-5 py-2 rounded-xl text-sm"
+                className="border border-white/10 hover:border-[#FF6B35]/50 hover:text-[#FF8C42] transition text-zinc-400 px-5 py-2 rounded-xl text-sm"
               >
                 Salir
               </button>
             </>
           ) : (
             <>
-              <Link
-                to="/login"
-                className="text-slate-300 hover:text-white transition"
-              >
+              <Link to="/login" className="text-zinc-400 hover:text-[#FF8C42] transition font-medium">
                 Login
               </Link>
-
               <Link
                 to="/register"
-                className="bg-blue-600 hover:bg-blue-700 transition text-white px-5 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-500/20"
+                className="bg-gradient-to-r from-[#FF6B35] to-[#FFB347] hover:opacity-90 transition text-black font-bold px-5 py-2 rounded-xl text-sm shadow-lg shadow-[#FF6B35]/20"
               >
                 Registrarse
               </Link>
             </>
           )}
-
         </div>
 
       </div>
-
     </nav>
   );
 }
 
 export default Navbar;
-
