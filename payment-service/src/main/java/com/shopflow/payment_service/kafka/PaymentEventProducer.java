@@ -1,15 +1,12 @@
 package com.shopflow.payment_service.kafka;
 
-import com.shopflow.payment_service.event.PaymentApprovedEvent;
-import com.shopflow.payment_service.event.PaymentFailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -24,26 +21,25 @@ public class PaymentEventProducer {
     @Value("${kafka.topics.payment-failed}")
     private String paymentFailedTopic;
 
-    public void publishPaymentApproved(PaymentApprovedEvent event) {
-        log.info("Publicando payment.approved para orden: {}", event.getOrderId());
-        // Enviamos sin type headers para que el consumer use su propio default type
-        Message<PaymentApprovedEvent> message = MessageBuilder
-                .withPayload(event)
-                .setHeader(KafkaHeaders.TOPIC, paymentApprovedTopic)
-                .setHeader(KafkaHeaders.KEY, event.getOrderId())
-                .setHeader("__TypeId__", "")
-                .build();
-        kafkaTemplate.send(message);
+    public void publishPaymentApproved(String orderId, String paymentId) {
+        log.info("Publicando payment.approved para orden: {}", orderId);
+        Map<String, String> event = Map.of(
+                "orderId", orderId,
+                "paymentId", paymentId,
+                "status", "APPROVED",
+                "reason", ""
+        );
+        kafkaTemplate.send(paymentApprovedTopic, orderId, event);
     }
 
-    public void publishPaymentFailed(PaymentFailedEvent event) {
-        log.info("Publicando payment.failed para orden: {}", event.getOrderId());
-        Message<PaymentFailedEvent> message = MessageBuilder
-                .withPayload(event)
-                .setHeader(KafkaHeaders.TOPIC, paymentFailedTopic)
-                .setHeader(KafkaHeaders.KEY, event.getOrderId())
-                .setHeader("__TypeId__", "")
-                .build();
-        kafkaTemplate.send(message);
+    public void publishPaymentFailed(String orderId, String paymentId, String reason) {
+        log.info("Publicando payment.failed para orden: {}", orderId);
+        Map<String, String> event = Map.of(
+                "orderId", orderId,
+                "paymentId", paymentId,
+                "status", "FAILED",
+                "reason", reason != null ? reason : "Pago rechazado"
+        );
+        kafkaTemplate.send(paymentFailedTopic, orderId, event);
     }
 }
