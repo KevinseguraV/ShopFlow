@@ -5,8 +5,6 @@ import com.shopflow.payment_service.dto.PaymentResponse;
 import com.shopflow.payment_service.entity.Payment;
 import com.shopflow.payment_service.enums.PaymentStatus;
 import com.shopflow.payment_service.event.OrderCreatedEvent;
-import com.shopflow.payment_service.event.PaymentApprovedEvent;
-import com.shopflow.payment_service.event.PaymentFailedEvent;
 import com.shopflow.payment_service.kafka.PaymentEventProducer;
 import com.shopflow.payment_service.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,8 +27,6 @@ public class PaymentService {
 
     @Value("${payment.currency.default:COP}")
     private String defaultCurrency;
-
-    // ─── Kafka: llamado desde el consumidor ───────────────────────────────────
 
     @Transactional
     public void processPayment(OrderCreatedEvent event) {
@@ -65,26 +60,15 @@ public class PaymentService {
         log.info("Pago guardado con status {} para orden: {}", payment.getStatus(), event.getOrderId());
 
         if (result.success()) {
-            eventProducer.publishPaymentApproved(new PaymentApprovedEvent(
-                    event.getOrderId(),
-                    payment.getId(),
-                    result.transactionId(),
-                    event.getTotalAmount(),
-                    currency,
-                    LocalDateTime.now()
-            ));
+            eventProducer.publishPaymentApproved(event.getOrderId(), payment.getId());
         } else {
-            eventProducer.publishPaymentFailed(new PaymentFailedEvent(
+            eventProducer.publishPaymentFailed(
                     event.getOrderId(),
                     payment.getId(),
-                    event.getTotalAmount(),
-                    result.gatewayResponse(),
-                    LocalDateTime.now()
-            ));
+                    result.gatewayResponse()
+            );
         }
     }
-
-    // ─── REST: llamado desde el controller ───────────────────────────────────
 
     @Transactional
     public PaymentResponse createPayment(String userId, CreatePaymentRequest request) {
@@ -141,8 +125,6 @@ public class PaymentService {
         paymentRepository.save(payment);
         return toResponse(payment);
     }
-
-    // ─── Mapper ──────────────────────────────────────────────────────────────
 
     private PaymentResponse toResponse(Payment payment) {
         return PaymentResponse.builder()
