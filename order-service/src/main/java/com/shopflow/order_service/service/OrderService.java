@@ -5,6 +5,7 @@ import com.shopflow.order_service.entity.Order;
 import com.shopflow.order_service.entity.OrderItem;
 import com.shopflow.order_service.entity.OrderStatus;
 import com.shopflow.order_service.event.OrderCreatedEvent;
+import com.shopflow.order_service.event.OrderStatusEvent;
 import com.shopflow.order_service.event.PaymentEvent;
 import com.shopflow.order_service.exception.OrderException;
 import com.shopflow.order_service.repository.OrderRepository;
@@ -48,6 +49,7 @@ public class OrderService {
 
         Order order = Order.builder()
                 .userId(userId)
+                .userEmail(request.getUserEmail())
                 .status(OrderStatus.PENDING)
                 .items(items)
                 .totalAmount(totalAmount)
@@ -60,11 +62,13 @@ public class OrderService {
         OrderCreatedEvent event = OrderCreatedEvent.builder()
                 .orderId(order.getId())
                 .userId(userId)
+                .userEmail(request.getUserEmail())
                 .totalAmount(totalAmount)
                 .shippingAddress(request.getShippingAddress())
                 .items(items.stream()
                         .map(i -> OrderCreatedEvent.OrderItemEvent.builder()
                                 .productId(i.getProductId())
+                                .productName(i.getProductName())
                                 .variantId(i.getVariantId())
                                 .quantity(i.getQuantity())
                                 .unitPrice(i.getUnitPrice())
@@ -107,7 +111,8 @@ public class OrderService {
         order.setPaymentId(event.getPaymentId());
         orderRepository.save(order);
 
-        kafkaTemplate.send("order.confirmed", order.getId(), event);
+        // Publica OrderStatusEvent con toda la info para notification-service
+        kafkaTemplate.send("order.confirmed", order.getId(), buildStatusEvent(order, "CONFIRMED"));
         log.info("Orden confirmada: {}", order.getId());
     }
 
@@ -122,8 +127,34 @@ public class OrderService {
         order.setFailureReason(event.getReason());
         orderRepository.save(order);
 
-        kafkaTemplate.send("order.cancelled", order.getId(), event);
+        // Publica OrderStatusEvent con toda la info para notification-service
+        kafkaTemplate.send("order.cancelled", order.getId(), buildStatusEvent(order, "CANCELLED"));
         log.warn("Orden cancelada por pago fallido: {}", order.getId());
+    }
+
+    // ── Helper: construye el evento de status con todos los datos ────────────
+    private OrderStatusEvent buildStatusEvent(Order order, String status) {
+        List<OrderStatusEvent.OrderItemEvent> itemEvents = order.getItems().stream()
+                .map(i -> OrderStatusEvent.OrderItemEvent.builder()
+                        .productId(i.getProductId())
+                        .productName(i.getProductName())
+                        .variantId(i.getVariantId())
+                        .quantity(i.getQuantity())
+                        .unitPrice(i.getUnitPrice())
+                        .build())
+                .collect(Collectors.toList());
+
+        return OrderStatusEvent.builder()
+                .orderId(order.getId())
+                .userId(order.getUserId())
+                .userEmail(order.getUserEmail())
+                .status(status)
+                .totalAmount(order.getTotalAmount())
+                .shippingAddress(order.getShippingAddress())
+                .paymentId(order.getPaymentId())
+                .failureReason(order.getFailureReason())
+                .items(itemEvents)
+                .build();
     }
 
     private OrderResponse toResponse(Order order) {

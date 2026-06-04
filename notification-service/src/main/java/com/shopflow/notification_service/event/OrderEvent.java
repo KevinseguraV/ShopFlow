@@ -1,4 +1,4 @@
-package com.shopflow.order_service.event;
+package com.shopflow.notification_service.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,13 +11,16 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderCreatedEvent {
+public class OrderEvent {
 
     private String orderId;
     private String userId;
     private String userEmail;
+    private String status;
     private double totalAmount;
     private String shippingAddress;
+    private String paymentId;
+    private String failureReason;
     private List<OrderItemEvent> items;
 
     @Data

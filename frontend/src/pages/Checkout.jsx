@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { getCartRequest, clearCartRequest } from "../api/cartApi";
 import { createOrderRequest } from "../api/orderApi";
+import { useAuth } from "../context/AuthContext";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("es-CO", {
@@ -11,7 +12,6 @@ const formatPrice = (price) =>
     minimumFractionDigits: 0,
   }).format(price || 0);
 
-/* ── Icono de check animado ── */
 function CheckIcon({ className = "" }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -20,7 +20,6 @@ function CheckIcon({ className = "" }) {
   );
 }
 
-/* ── Step indicator arriba ── */
 function StepBar({ step }) {
   const steps = ["Carrito", "Dirección", "Confirmar"];
   return (
@@ -33,13 +32,11 @@ function StepBar({ step }) {
         return (
           <div key={label} className="flex items-center">
             <div className="flex flex-col items-center gap-1.5">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all duration-300
-                  ${isDone  ? "bg-gradient-to-br from-[#FF6B35] to-[#FFB347] border-transparent text-white"  : ""}
-                  ${isActive ? "border-[#FF6B35] text-[#FF6B35] bg-transparent"                               : ""}
-                  ${!isActive && !isDone ? "border-white/15 text-zinc-600 bg-transparent"                    : ""}
-                `}
-              >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all duration-300
+                ${isDone   ? "bg-gradient-to-br from-[#FF6B35] to-[#FFB347] border-transparent text-white" : ""}
+                ${isActive ? "border-[#FF6B35] text-[#FF6B35] bg-transparent" : ""}
+                ${!isActive && !isDone ? "border-white/15 text-zinc-600 bg-transparent" : ""}
+              `}>
                 {isDone ? <CheckIcon className="w-3.5 h-3.5" /> : num}
               </div>
               <span className={`text-[10px] font-medium whitespace-nowrap tracking-wide
@@ -58,7 +55,6 @@ function StepBar({ step }) {
   );
 }
 
-/* ── Campo de texto con label flotante ── */
 function FloatingField({ label, value, onChange, error, rows = 1, placeholder = "" }) {
   const [focused, setFocused] = useState(false);
   const hasValue = value.trim().length > 0;
@@ -74,13 +70,11 @@ function FloatingField({ label, value, onChange, error, rows = 1, placeholder = 
 
   return (
     <div className="relative">
-      <label
-        className={`absolute left-4 pointer-events-none transition-all duration-200 font-medium
-          ${isUp
-            ? "top-2 text-[10px] tracking-widest uppercase " + (error ? "text-red-400" : focused ? "text-[#FF6B35]" : "text-zinc-500")
-            : "top-1/2 -translate-y-1/2 text-sm text-zinc-500"
-          } ${rows > 1 && !isUp ? "top-4 translate-y-0" : ""}`}
-      >
+      <label className={`absolute left-4 pointer-events-none transition-all duration-200 font-medium
+        ${isUp
+          ? "top-2 text-[10px] tracking-widest uppercase " + (error ? "text-red-400" : focused ? "text-[#FF6B35]" : "text-zinc-500")
+          : "top-1/2 -translate-y-1/2 text-sm text-zinc-500"
+        } ${rows > 1 && !isUp ? "top-4 translate-y-0" : ""}`}>
         {label}
       </label>
 
@@ -115,11 +109,9 @@ function FloatingField({ label, value, onChange, error, rows = 1, placeholder = 
   );
 }
 
-/* ── Item del resumen ── */
 function SummaryItem({ item }) {
   return (
     <div className="flex items-center gap-3 py-3 border-b border-white/[0.05] last:border-0">
-      {/* Quantity bubble */}
       <div className="w-7 h-7 flex-shrink-0 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center text-[11px] font-bold text-zinc-300">
         {item.quantity}
       </div>
@@ -129,7 +121,6 @@ function SummaryItem({ item }) {
   );
 }
 
-/* ── Toast de error global ── */
 function ErrorToast({ message, onClose }) {
   if (!message) return null;
   return (
@@ -141,7 +132,6 @@ function ErrorToast({ message, onClose }) {
   );
 }
 
-/* ── Overlay de éxito ── */
 function SuccessOverlay() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -156,24 +146,19 @@ function SuccessOverlay() {
   );
 }
 
-/* ══════════════════════════════════════════════
-   COMPONENTE PRINCIPAL
-══════════════════════════════════════════════ */
 function Checkout() {
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const { user }    = useAuth();
 
-  const [cart, setCart]         = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [success, setSuccess]   = useState(false);
+  const [cart, setCart]               = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [creating, setCreating]       = useState(false);
+  const [success, setSuccess]         = useState(false);
   const [globalError, setGlobalError] = useState("");
 
-  /* Campos del formulario */
-  const [street,  setStreet]  = useState("");
-  const [city,    setCity]    = useState("");
-  const [notes,   setNotes]   = useState("");
-
-  /* Errores inline */
+  const [street, setStreet] = useState("");
+  const [city,   setCity]   = useState("");
+  const [notes,  setNotes]  = useState("");
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -183,7 +168,6 @@ function Checkout() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ── Validación ── */
   const validate = () => {
     const e = {};
     if (!street.trim()) e.street = "La dirección es obligatoria";
@@ -191,7 +175,6 @@ function Checkout() {
     return e;
   };
 
-  /* ── Submit ── */
   const handleCheckout = async () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
@@ -203,6 +186,7 @@ function Checkout() {
 
       const payload = {
         shippingAddress,
+        userEmail: user?.email || "",
         items: cart.items.map((item) => ({
           productId:   item.productId,
           productName: item.productName,
@@ -224,11 +208,9 @@ function Checkout() {
     }
   };
 
-  /* ── Totales ── */
   const subtotal  = cart?.totalPrice || 0;
   const itemCount = cart?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
 
-  /* ── Loading ── */
   if (loading) {
     return (
       <MainLayout>
@@ -245,11 +227,8 @@ function Checkout() {
       <ErrorToast message={globalError} onClose={() => setGlobalError("")} />
 
       <div className="max-w-5xl mx-auto py-10 px-4">
-
-        {/* Step bar */}
         <StepBar step={2} />
 
-        {/* Title */}
         <div className="mb-8">
           <h1 className="text-4xl font-black text-white tracking-tight">Finalizar compra</h1>
           <p className="text-zinc-500 text-sm mt-1">Completa tu dirección para confirmar el pedido</p>
@@ -257,10 +236,8 @@ function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
 
-          {/* ──── Columna izquierda: Formulario ──── */}
+          {/* Formulario */}
           <div className="flex flex-col gap-4">
-
-            {/* Dirección */}
             <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/15 border border-[#FF6B35]/20 flex items-center justify-center">
@@ -271,7 +248,6 @@ function Checkout() {
                 </div>
                 <h2 className="text-white font-bold text-lg">Dirección de envío</h2>
               </div>
-
               <div className="flex flex-col gap-4">
                 <FloatingField
                   label="Calle y número"
@@ -294,7 +270,6 @@ function Checkout() {
               </div>
             </div>
 
-            {/* Info de pago */}
             <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
@@ -314,9 +289,8 @@ function Checkout() {
             </div>
           </div>
 
-          {/* ──── Columna derecha: Resumen ──── */}
+          {/* Resumen */}
           <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6 sticky top-6">
-
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-white font-bold text-lg">Resumen</h2>
               <span className="text-xs text-zinc-500 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
@@ -324,14 +298,12 @@ function Checkout() {
               </span>
             </div>
 
-            {/* Items */}
             <div className="mb-5">
               {cart?.items?.map((item) => (
                 <SummaryItem key={item.productId} item={item} />
               ))}
             </div>
 
-            {/* Totales */}
             <div className="flex flex-col gap-2 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Subtotal</span>
@@ -350,7 +322,6 @@ function Checkout() {
               </div>
             </div>
 
-            {/* Botón */}
             <button
               onClick={handleCheckout}
               disabled={creating || success}
@@ -379,7 +350,6 @@ function Checkout() {
               Al confirmar aceptas los términos del servicio
             </p>
           </div>
-
         </div>
       </div>
     </MainLayout>
