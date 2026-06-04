@@ -4,9 +4,11 @@ import com.shopflow.inventory_service.dto.CreateInventoryRequest;
 import com.shopflow.inventory_service.dto.InventoryResponse;
 import com.shopflow.inventory_service.entity.InventoryItem;
 import com.shopflow.inventory_service.entity.StockMovement;
+import com.shopflow.inventory_service.event.InventoryFailedEvent;
 import com.shopflow.inventory_service.event.OrderCreatedEvent;
 import com.shopflow.inventory_service.event.OrderConfirmedEvent;
 import com.shopflow.inventory_service.exception.InventoryException;
+import com.shopflow.inventory_service.kafka.InventoryEventProducer;
 import com.shopflow.inventory_service.repository.InventoryRepository;
 import com.shopflow.inventory_service.repository.StockMovementRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final StockMovementRepository stockMovementRepository;
+    private final InventoryEventProducer eventProducer;
 
     @Transactional
     public InventoryResponse createInventory(CreateInventoryRequest request) {
@@ -72,12 +75,24 @@ public class InventoryService {
 
             if (inventory == null) {
                 log.warn("Producto no encontrado en inventario: {}", item.getProductId());
-                continue;
+                eventProducer.publishInventoryFailed(InventoryFailedEvent.builder()
+                        .orderId(event.getOrderId())
+                        .productId(item.getProductId())
+                        .reason("Producto no encontrado en inventario")
+                        .build());
+                return;
             }
 
             if (inventory.getAvailableQuantity() < item.getQuantity()) {
                 log.warn("Stock insuficiente para producto: {}", item.getProductId());
-                continue;
+                eventProducer.publishInventoryFailed(InventoryFailedEvent.builder()
+                        .orderId(event.getOrderId())
+                        .productId(item.getProductId())
+                        .reason("Stock insuficiente: disponible=" +
+                                inventory.getAvailableQuantity() +
+                                ", solicitado=" + item.getQuantity())
+                        .build());
+                return;
             }
 
             inventory.setReservedQuantity(
