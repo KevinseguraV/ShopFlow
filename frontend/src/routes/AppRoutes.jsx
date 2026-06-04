@@ -17,6 +17,7 @@ import AdminDashboard from "../admin/pages/AdminDashboard";
 import AdminProducts from "../admin/pages/AdminProducts";
 import AdminCategories from "../admin/pages/AdminCategories";
 import AdminOrders from "../admin/pages/AdminOrders";
+import AdminInventory from "../admin/pages/AdminInventory";
 import AdminProductCreate from "../admin/pages/AdminProductCreate";
 
 function AppRoutes() {
@@ -24,95 +25,26 @@ function AppRoutes() {
     <BrowserRouter>
       <Routes>
 
-        {/* Públicas */}
+        {/* ───────── Públicas ───────── */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetail />} />
 
-        {/* Usuario */}
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <Cart />
-            </ProtectedRoute>
-          }
-        />
+        {/* ───────── Usuario ───────── */}
+        <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+        <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+        <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
 
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <Checkout />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/products/new"
-          element={
-            <AdminRoute>
-              <AdminProductCreate />
-            </AdminRoute>
-          }
-        />
-
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/orders/:id"
-          element={
-            <ProtectedRoute>
-              <OrderDetail />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          }
-        />
-
-        <Route
-          path="/admin/products"
-          element={
-            <AdminRoute>
-              <AdminProducts />
-            </AdminRoute>
-          }
-        />
-
-        <Route
-          path="/admin/categories"
-          element={
-            <AdminRoute>
-              <AdminCategories />
-            </AdminRoute>
-          }
-        />
-
-        <Route
-          path="/admin/orders"
-          element={
-            <AdminRoute>
-              <AdminOrders />
-            </AdminRoute>
-          }
-        />
+        {/* ───────── Admin ───────── */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+        <Route path="/admin/products/new" element={<AdminRoute><AdminProductCreate /></AdminRoute>} />
+        <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
+        <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+        <Route path="/admin/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
 
       </Routes>
     </BrowserRouter>
