@@ -2,6 +2,7 @@ package com.shopflow.order_service.service;
 
 import com.shopflow.order_service.dto.*;
 import com.shopflow.order_service.entity.Order;
+import com.shopflow.order_service.event.InventoryFailedEvent;
 import com.shopflow.order_service.entity.OrderItem;
 import com.shopflow.order_service.entity.OrderStatus;
 import com.shopflow.order_service.event.OrderCreatedEvent;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -184,5 +186,28 @@ public class OrderService {
                 .updatedAt(order.getUpdatedAt() != null ?
                         order.getUpdatedAt().toString() : null)
                 .build();
+    }
+
+    @Transactional
+    public void handleInventoryFailed(InventoryFailedEvent event) {
+        Order order = orderRepository.findById(event.getOrderId())
+                .orElse(null);
+
+        if (order == null) {
+            log.warn("Orden no encontrada para inventory.failed: {}", event.getOrderId());
+            return;
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            log.warn("Orden {} ya no está en PENDING, ignorando inventory.failed", event.getOrderId());
+            return;
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setFailureReason("Stock insuficiente: " + event.getReason());
+        orderRepository.save(order);
+
+        kafkaTemplate.send("order.cancelled", order.getId(), buildStatusEvent(order, "CANCELLED"));
+        log.warn("Orden cancelada por stock insuficiente: {}", order.getId());
     }
 }
