@@ -61,7 +61,7 @@ public class EmailNotificationService {
 
         helper.setFrom(fromEmail);
         helper.setTo(event.getUserEmail());
-        helper.setSubject("✅ Tu orden #" + shortId(event.getOrderId()) + " fue confirmada");
+        helper.setSubject(" Tu orden #" + shortId(event.getOrderId()) + " fue confirmada");
         helper.setText(buildConfirmedHtml(event), true);
 
         mailSender.send(message);
@@ -109,7 +109,7 @@ public class EmailNotificationService {
                 </div>
                 <div style="background:#111;border:1px solid #1f1f1f;border-radius:12px;padding:32px;margin-bottom:24px;">
                     <div style="text-align:center;margin-bottom:24px;">
-                        <span style="font-size:48px;">✅</span>
+                        <span style="font-size:48px;"></span>
                         <h2 style="color:#ffffff;margin:8px 0 4px;">¡Orden confirmada!</h2>
                         <p style="color:#71717a;margin:0;">Orden #%s</p>
                     </div>
@@ -153,7 +153,7 @@ public class EmailNotificationService {
                     <p style="color:#71717a;margin:4px 0 0;">La nueva forma de comprar todo</p>
                 </div>
                 <div style="background:#111;border:1px solid #1f1f1f;border-radius:12px;padding:32px;margin-bottom:24px;text-align:center;">
-                    <span style="font-size:48px;">❌</span>
+                    <span style="font-size:48px;"></span>
                     <h2 style="color:#ffffff;margin:8px 0 4px;">Orden cancelada</h2>
                     <p style="color:#71717a;margin:0 0 16px;">Orden #%s</p>
                     <p style="color:#e5e5e5;margin:0;">
