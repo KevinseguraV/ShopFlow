@@ -1,6 +1,7 @@
 package com.shopflow.order_service.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
@@ -16,4 +17,7 @@ public class CreateOrderRequest {
 
     @NotBlank(message = "La dirección de envío es obligatoria")
     private String shippingAddress;
+
+    @Email(message = "Email inválido")
+    private String userEmail;
 }

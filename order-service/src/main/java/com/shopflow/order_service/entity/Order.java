@@ -22,6 +22,9 @@ public class Order {
     @Column(nullable = false)
     private String userId;
 
+    @Column
+    private String userEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;

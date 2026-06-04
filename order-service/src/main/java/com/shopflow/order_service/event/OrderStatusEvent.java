@@ -11,13 +11,16 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderCreatedEvent {
+public class OrderStatusEvent {
 
     private String orderId;
     private String userId;
     private String userEmail;
+    private String status;          // CONFIRMED | CANCELLED
     private double totalAmount;
     private String shippingAddress;
+    private String paymentId;
+    private String failureReason;
     private List<OrderItemEvent> items;
 
     @Data
