@@ -2,6 +2,7 @@ package com.shopflow.inventory_service.service;
 
 import com.shopflow.inventory_service.dto.CreateInventoryRequest;
 import com.shopflow.inventory_service.dto.InventoryResponse;
+import com.shopflow.inventory_service.dto.UpdateInventoryRequest;
 import com.shopflow.inventory_service.entity.InventoryItem;
 import com.shopflow.inventory_service.entity.StockMovement;
 import com.shopflow.inventory_service.event.InventoryFailedEvent;
@@ -43,6 +44,24 @@ public class InventoryService {
                 .quantity(request.getQuantity())
                 .reservedQuantity(0)
                 .build();
+
+        return toResponse(inventoryRepository.save(item));
+    }
+
+    // ── Actualiza stock de un producto existente ──────────────────────────────
+    @Transactional
+    public InventoryResponse updateStock(String productId, UpdateInventoryRequest request) {
+        InventoryItem item = inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new InventoryException(
+                        "Inventario no encontrado", HttpStatus.NOT_FOUND));
+
+        item.setQuantity(request.getQuantity());
+        if (request.getLowStockThreshold() != null) {
+            item.setLowStockThreshold(request.getLowStockThreshold());
+        }
+
+        log.info("Stock actualizado — producto: {}, nueva cantidad: {}",
+                productId, request.getQuantity());
 
         return toResponse(inventoryRepository.save(item));
     }
@@ -192,6 +211,7 @@ public class InventoryService {
                 .quantity(item.getQuantity())
                 .reservedQuantity(item.getReservedQuantity())
                 .availableQuantity(item.getAvailableQuantity())
+                .lowStockThreshold(item.getLowStockThreshold())
                 .updatedAt(item.getUpdatedAt().toString())
                 .build();
     }

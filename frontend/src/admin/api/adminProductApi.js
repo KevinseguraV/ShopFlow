@@ -30,6 +30,9 @@ export const getInventoryByProductRequest = (productId) =>
 export const createInventoryRequest = (payload) =>
   api.post("/api/inventory", payload).then((r) => r.data);
 
+export const updateInventoryRequest = (productId, payload) =>
+  api.put(`/api/inventory/${productId}`, payload).then((r) => r.data);
+
 // Órdenes admin
 export const getAdminOrdersRequest = (page = 0, size = 20) =>
   api.get(`/api/orders/admin?page=${page}&size=${size}`).then((r) => r.data);

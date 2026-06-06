@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../layouts/AdminLayout";
-import { getInventoryRequest, createInventoryRequest, getAdminProductsRequest } from "../api/adminProductApi";
-
+import { getInventoryRequest, createInventoryRequest, updateInventoryRequest, getAdminProductsRequest } from "../api/adminProductApi";
 function AdminInventory() {
   const [inventory, setInventory] = useState([]);
   const [products, setProducts]   = useState([]);
@@ -32,21 +31,33 @@ function AdminInventory() {
 
   const handleCreate = async () => {
     if (!form.productId) { setError("Selecciona un producto"); return; }
-    if (!form.quantity || Number(form.quantity) < 0) { setError("Cantidad inválida"); return; }
+    if (form.quantity === "" || Number(form.quantity) < 0) { setError("Cantidad inválida"); return; }
     setError("");
     try {
       setCreating(true);
-      await createInventoryRequest({
-        productId:         form.productId,
-        quantity:          Number(form.quantity),
-        lowStockThreshold: Number(form.lowStockThreshold) || 5,
-      });
+      const alreadyExists = inventoryByProduct[form.productId];
+      if (alreadyExists) {
+        // Actualiza stock existente
+        await updateInventoryRequest(form.productId, {
+          quantity:          Number(form.quantity),
+          lowStockThreshold: Number(form.lowStockThreshold) || 5,
+        });
+      } else {
+        // Crea nuevo registro
+        const selectedProduct = products.find((p) => p.id === form.productId);
+        await createInventoryRequest({
+          productId:         form.productId,
+          productName:       selectedProduct?.name || "",
+          quantity:          Number(form.quantity),
+          lowStockThreshold: Number(form.lowStockThreshold) || 5,
+        });
+      }
       setForm({ productId: "", quantity: "", lowStockThreshold: "5" });
       setShowForm(false);
       await load();
     } catch (e) {
       console.error(e);
-      setError("Error al crear el registro de inventario");
+      setError("Error al guardar el inventario");
     } finally {
       setCreating(false);
     }
@@ -58,9 +69,9 @@ function AdminInventory() {
     return                                                       { label: "Disponible", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20" };
   };
 
-  // Productos que ya tienen inventario registrado
-  const registeredIds = new Set(inventory.map((i) => i.productId));
-  const availableProducts = products.filter((p) => !registeredIds.has(p.id));
+  // Mapa productId -> inventoryItem para saber si ya existe
+  const inventoryByProduct = Object.fromEntries(inventory.map((i) => [i.productId, i]));
+  const availableProducts = products; // mostrar todos
 
   return (
     <AdminLayout>
@@ -88,13 +99,14 @@ function AdminInventory() {
               <select
                 value={form.productId}
                 onChange={(e) => { setForm({ ...form, productId: e.target.value }); setError(""); }}
-                className="w-full h-11 px-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white outline-none focus:border-[#FF6B35]/60 transition"
+                className="w-full h-11 px-3 rounded-xl border border-white/[0.08] text-white outline-none focus:border-[#FF6B35]/60 transition"
+                style={{ backgroundColor: "#1a1a1a" }}
               >
-                <option value="">Seleccionar...</option>
+                <option value="" style={{ backgroundColor: "#1a1a1a" }}>Seleccionar...</option>
                 {availableProducts.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id} style={{ backgroundColor: "#1a1a1a" }}>{p.name}</option>
                 ))}
-              </select>
+                </select>
             </div>
             <div>
               <label className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5 block">Cantidad</label>

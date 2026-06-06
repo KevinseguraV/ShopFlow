@@ -141,10 +141,11 @@ function AdminProductCreate() {
                     value={form.categoryId}
                     onChange={handleChange}
                     className={`${fieldClass(false)} h-11`}
+                    style={{ backgroundColor: '#1a1a1a' }}
                   >
-                    <option value="">Seleccionar...</option>
+                    <option value="" style={{ backgroundColor: '#1a1a1a' }}>Seleccionar...</option>
                     {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id} style={{ backgroundColor: '#1a1a1a' }}>{c.name}</option>
                     ))}
                   </select>
                 </div>

@@ -61,10 +61,10 @@ function AdminDashboard() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard label="Productos"   value={stats.products}   icon="📦" accent="orange" onClick={() => navigate("/admin/products")} />
-          <StatCard label="Categorías"  value={stats.categories} icon="🏷️" accent="blue"   onClick={() => navigate("/admin/categories")} />
-          <StatCard label="Órdenes"     value={stats.orders}     icon="🛒" accent="green"  onClick={() => navigate("/admin/orders")} />
-          <StatCard label="Inventario"  value={stats.inventory}  icon="🏪" accent="purple" />
+          <StatCard label="Productos"   value={stats.products}   icon="" accent="orange" onClick={() => navigate("/admin/products")} />
+          <StatCard label="Categorías"  value={stats.categories} icon="️" accent="blue"   onClick={() => navigate("/admin/categories")} />
+          <StatCard label="Órdenes"     value={stats.orders}     icon="" accent="green"  onClick={() => navigate("/admin/orders")} />
+          <StatCard label="Inventario"  value={stats.inventory}  icon="" accent="purple" />
         </div>
       )}
 
