@@ -106,7 +106,7 @@ function AdminInventory() {
                 {availableProducts.map((p) => (
                   <option key={p.id} value={p.id} style={{ backgroundColor: "#1a1a1a" }}>{p.name}</option>
                 ))}
-              </select>
+                </select>
             </div>
             <div>
               <label className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5 block">Cantidad</label>

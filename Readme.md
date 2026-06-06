@@ -17,363 +17,203 @@ Java 17 • Spring Boot 3.4.5 • React • PostgreSQL • MongoDB • Redis •
 
 ---
 
-#  Descripción
+##  Tabla de contenidos
 
-ShopFlow es una plataforma de e-commerce moderna desarrollada utilizando una arquitectura de microservicios completamente desacoplada.
-
-El proyecto implementa autenticación JWT, catálogo de productos, carrito de compras, procesamiento de órdenes, pagos simulados, gestión de inventario y comunicación asíncrona mediante Apache Kafka utilizando el patrón Saga para garantizar consistencia distribuida.
-
-Cada microservicio posee su propia responsabilidad, almacenamiento y ciclo de vida independiente.
-
----
-
-#  Características
-
-- Arquitectura de Microservicios
-- API Gateway centralizado
-- Autenticación JWT
-- Refresh Token Rotation
-- Catálogo de productos
-- Gestión de categorías
-- Carrito basado en Redis
-- Órdenes distribuidas
-- Procesamiento de pagos
-- Gestión de inventario
-- Comunicación Event-Driven
-- Apache Kafka
-- Saga Pattern
-- React + Vite
-- Tailwind CSS
-- PostgreSQL
-- MongoDB
-- Redis
+- [Descripción](#-descripción)
+- [Arquitectura](#-arquitectura)
+- [Tech Stack](#-tech-stack)
+- [Microservicios](#-microservicios)
+- [Flujo Saga](#-flujo-saga)
+- [Características](#-características)
+- [Requisitos](#-requisitos)
+- [Instalación y ejecución](#-instalación-y-ejecución)
+- [Variables de entorno](#-variables-de-entorno)
+- [Estructura del proyecto](#-estructura-del-proyecto)
 
 ---
 
-# ️ Arquitectura General
+##  Descripción
 
-```text
-Frontend React
-      │
-      ▼
-API Gateway (8080)
-      │
- ┌────┼────┬────┬────┐
- ▼    ▼    ▼    ▼    ▼
+ShopFlow es una aplicación de e-commerce completa desarrollada como proyecto de portfolio. Implementa una arquitectura de microservicios con comunicación asíncrona mediante Apache Kafka, autenticación JWT, gestión de inventario en tiempo real y notificaciones por email automáticas al confirmar o cancelar órdenes.
 
-Auth       Catalog      Cart
-8081       8082         8083
+---
 
-            │
-            ▼
+## Arquitectura
 
-        Kafka
-
-            │
-     ┌──────┼─────────┐
-     ▼      ▼         ▼
-
-   Orders Payments Inventory
-    8084     8085      8086
+```
+                        ┌─────────────────────────────────────────┐
+                        │              React Frontend              │
+                        │         (Vite + Tailwind CSS)           │
+                        └──────────────────┬──────────────────────┘
+                                           │ HTTP
+                        ┌──────────────────▼──────────────────────┐
+                        │              API Gateway                 │
+                        │     (Spring Cloud Gateway — :8080)      │
+                        │  JWT Validation · CORS · Rate Limiting  │
+                        └───┬───────┬───────┬───────┬─────────────┘
+                            │       │       │       │
+              ┌─────────────▼─┐ ┌───▼───┐ ┌▼──────┐ ┌▼──────────┐
+              │ auth-service  │ │catalog│ │ cart  │ │  order    │
+              │    :8081      │ │ :8082 │ │ :8083 │ │  :8084    │
+              │  PostgreSQL   │ │MongoDB│ │ Redis │ │PostgreSQL │
+              └───────────────┘ └───────┘ └───────┘ └─────┬─────┘
+                                                           │ Kafka
+                          ┌───────────────────────────────┼──────────────┐
+                          │                               │              │
+                    ┌─────▼──────┐               ┌────────▼────┐  ┌──────▼──────┐
+                    │  payment   │               │  inventory  │  │notification │
+                    │  :8085     │               │   :8086     │  │   :8087     │
+                    │ PostgreSQL │               │ PostgreSQL  │  │   Gmail     │
+                    └────────────┘               └─────────────┘  └─────────────┘
 ```
 
 ---
 
-# Microservicios
+##  Tech Stack
 
-| Servicio | Puerto | Persistencia |
-|-----------|---------|-------------|
-| api-gateway | 8080 | — |
-| auth-service | 8081 | PostgreSQL |
-| catalog-service | 8082 | MongoDB |
-| cart-service | 8083 | Redis |
-| order-service | 8084 | PostgreSQL |
-| payment-service | 8085 | PostgreSQL |
-| inventory-service | 8086 | PostgreSQL |
+### Backend
+| Tecnología | Uso |
+|---|---|
+| Java 17 | Lenguaje principal |
+| Spring Boot 3.4.5 | Framework base |
+| Spring Cloud Gateway | API Gateway + JWT |
+| Spring Security | Autenticación |
+| Spring Data JPA | Persistencia relacional |
+| Spring Data MongoDB | Persistencia documental |
+| Spring Data Redis | Cache y carrito |
+| Spring Kafka | Mensajería asíncrona |
+| JWT (jjwt) | Tokens de acceso y refresh |
+| Lombok | Reducción de boilerplate |
+| Maven | Gestión de dependencias |
 
----
+### Frontend
+| Tecnología | Uso |
+|---|---|
+| React 18 | UI framework |
+| Vite | Build tool |
+| Tailwind CSS | Estilos |
+| React Router v6 | Navegación |
+| Axios | HTTP client |
+| Cloudinary | Almacenamiento de imágenes |
 
-#  Stack Tecnológico
-
-## Backend
-
-- Java 17
-- Spring Boot 3.4.5
-- Spring Security
-- Spring Cloud Gateway
-- Spring Data JPA
-- Spring Data MongoDB
-- Hibernate Validator
-- Lombok
-- Spring Actuator
-- Micrometer
-
-## Frontend
-
-- React
-- Vite
-- Tailwind CSS
-- Axios
-- React Router
-
-## Bases de Datos
-
-### PostgreSQL
-
-- shopflow_auth
-- shopflow_orders
-- shopflow_payments
-- shopflow_inventory
-
-### MongoDB
-
-- shopflow_catalog
-
-### Redis
-
-- Carrito de compras
+### Infraestructura
+| Tecnología | Uso |
+|---|---|
+| PostgreSQL | BD relacional (auth, orders, payments, inventory) |
+| MongoDB | BD documental (catálogo) |
+| Redis | Cache / carrito de compras |
+| Apache Kafka | Mensajería entre microservicios |
+| Docker | Kafka y Redis en contenedores |
 
 ---
 
-#  Seguridad
+##  Microservicios
 
-## JWT
+| Servicio | Puerto | BD | Responsabilidad |
+|---|---|---|---|
+| `api-gateway` | 8080 | — | Enrutamiento, validación JWT, CORS |
+| `auth-service` | 8081 | PostgreSQL | Registro, login, refresh tokens |
+| `catalog-service` | 8082 | MongoDB | Productos, categorías, búsqueda |
+| `cart-service` | 8083 | Redis | Carrito de compras |
+| `order-service` | 8084 | PostgreSQL | Creación y gestión de órdenes |
+| `payment-service` | 8085 | PostgreSQL | Procesamiento de pagos (mock 80%) |
+| `inventory-service` | 8086 | PostgreSQL | Stock y reservas de inventario |
+| `notification-service` | 8087 | — | Emails con Gmail SMTP |
 
-- Access Token: 15 minutos
-- Refresh Token: 7 días
-- Rotación de Refresh Token
-- Roles USER y ADMIN
+---
 
-## Propagación de Identidad
+##  Flujo Saga
 
-El Gateway valida el token y propaga:
+ShopFlow implementa el **patrón Saga coreografiado** para mantener la consistencia entre microservicios sin transacciones distribuidas:
 
-```http
-X-User-Id
-X-User-Role
+```
+Usuario confirma compra
+        │
+        ▼
+order-service → guarda orden PENDING → publica [order.created]
+        │
+        ├──► payment-service consume [order.created]
+        │         │
+        │         ├── 80% éxito  → publica [payment.approved]
+        │         └── 20% fallo  → publica [payment.failed]
+        │
+        ├──► inventory-service consume [order.created]
+        │         └── reserva stock temporalmente
+        │
+order-service consume [payment.approved] → orden CONFIRMED → publica [order.confirmed]
+order-service consume [payment.failed]   → orden CANCELLED → publica [order.cancelled]
+        │
+        ├──► inventory-service consume [order.confirmed] → descuenta stock definitivo
+        │    inventory-service consume [order.cancelled] → libera stock reservado
+        │
+        └──► notification-service consume [order.confirmed] → email de confirmación
+             notification-service consume [order.cancelled] → email de cancelación
 ```
 
 ---
 
-#  Saga Pattern
+##  Características
 
-## Flujo Completo
+### Tienda
+-  Búsqueda y filtrado de productos por categoría
+-  Carrito de compras persistente en Redis
+-  Detalle de producto con estado de stock en tiempo real
+-  Checkout con validación de dirección
+-  Historial de órdenes con detalle completo
+-  Email automático al confirmar o cancelar una orden
 
-```text
-Frontend
-   │
-   ▼
+### Autenticación
+-  JWT con access token (15 min) + refresh token (7 días)
+-  Rotación automática de refresh tokens
+-  Roles: `USER` y `ADMIN`
 
-POST /api/orders
+### Panel de administración
+-  CRUD completo de productos con imágenes en Cloudinary
+- ️ Gestión de categorías
+-  Control de inventario con alertas de stock bajo
+-  Visualización de órdenes con filtros por estado
 
-   │
-   ▼
+### Inventario inteligente
+-  Badge "En stock" con cantidad disponible
+- ️ Alerta "¡Solo quedan X unidades!" cuando el stock es bajo
+-  Badge "Agotado" y botón deshabilitado cuando no hay stock
+-  Reserva temporal de stock durante el proceso de pago
 
-order-service
+---
 
-   │
-   ▼
+##  Requisitos
 
-Kafka Topic
-order.created
+- Java 17+
+- Node.js 18+
+- Maven 3.8+
+- PostgreSQL 12+
+- MongoDB 6+
+- Docker (para Kafka y Redis)
+- Cuenta de Cloudinary (gratuita)
+- Cuenta de Gmail con verificación en 2 pasos y App Password
 
-   │
-   ▼
+---
 
-payment-service
+##  Instalación y ejecución
 
- ├─ payment.approved
- └─ payment.failed
+### 1. Clonar el repositorio
 
-   │
-   ▼
-
-order-service
-
- CONFIRMED
- CANCELLED
-
-   │
-   ▼
-
-inventory-service
-
- reserva/libera stock
+```bash
+git clone https://github.com/kevinsegurav/ShopFlow.git
+cd ShopFlow
 ```
 
----
+### 2. Levantar infraestructura con Docker
 
-#  Auth Service
+```bash
+# Kafka
+docker run -d --name shopflow-kafka -p 9092:9092 apache/kafka:3.7.0
 
-## Endpoints
-
-```http
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/refresh
-POST /api/auth/logout
-GET  /api/auth/me
+# Redis
+docker run -d --name shopflow-redis -p 6379:6379 redis:7-alpine
 ```
 
-### Funcionalidades
-
-- Registro
-- Login
-- Logout
-- Refresh Token
-- Perfil autenticado
-
----
-
-#  Catalog Service
-
-## Funcionalidades
-
-- CRUD Productos
-- CRUD Categorías
-- Búsqueda
-- Paginación
-- Control ADMIN
-
-## Endpoints
-
-```http
-GET /api/catalog/products
-GET /api/catalog/products/{id}
-GET /api/catalog/products/search
-GET /api/catalog/categories
-```
-
----
-
-#  Cart Service
-
-## Funcionalidades
-
-- Obtener carrito
-- Agregar producto
-- Actualizar cantidad
-- Eliminar producto
-- Vaciar carrito
-
-## Endpoints
-
-```http
-GET /api/cart
-POST /api/cart/items
-PUT /api/cart/items/{productId}
-DELETE /api/cart/items/{productId}
-DELETE /api/cart
-```
-
----
-
-# Order Service
-
-## Funcionalidades
-
-- Crear orden
-- Consultar órdenes
-- Consultar detalle
-- Publicar eventos Kafka
-
-## Endpoints
-
-```http
-POST /api/orders
-GET /api/orders
-GET /api/orders/{id}
-```
-
----
-
-#  Payment Service
-
-## Funcionalidades
-
-- Consumo de eventos order.created
-- Pago mock
-- Idempotencia
-- Publicación de eventos
-
-```properties
-payment.mock.success-rate=0.8
-```
-
----
-
-#  Inventory Service
-
-## Funcionalidades
-
-- Reserva de stock
-- Confirmación de stock
-- Liberación de stock
-
-## Endpoints
-
-```http
-GET /api/inventory
-GET /api/inventory/{productId}
-POST /api/inventory
-```
-
----
-
-# ️ Frontend
-
-## Tecnologías
-
-- React
-- Vite
-- Tailwind CSS
-
-## Páginas
-
-### Públicas
-
-- Home
-- Login
-- Register
-- Products
-- Product Detail
-
-### Protegidas
-
-- Cart
-- Checkout
-- Orders
-
----
-
-#  Estructura Frontend
-
-```text
-frontend/src
-│
-├── api
-├── components
-├── context
-├── layouts
-├── pages
-└── routes
-```
-
----
-
-#  Ejecución Local
-
-## Requisitos
-
-- Java 17
-- Maven 3.9+
-- PostgreSQL
-- MongoDB
-- Docker
-
----
-
-## PostgreSQL
+### 3. Crear bases de datos en PostgreSQL
 
 ```sql
 CREATE DATABASE shopflow_auth;
@@ -382,125 +222,109 @@ CREATE DATABASE shopflow_payments;
 CREATE DATABASE shopflow_inventory;
 ```
 
----
+### 4. Configurar variables de entorno
 
-## MongoDB
+Copia y edita el archivo de ejemplo en cada microservicio (ver sección [Variables de entorno](#-variables-de-entorno)).
 
-```text
-shopflow_catalog
-```
+### 5. Levantar los microservicios
 
----
-
-## Kafka
+Levanta cada servicio en este orden desde su carpeta raíz:
 
 ```bash
-docker start shopflow-kafka
+# En cada carpeta de microservicio:
+mvn spring-boot:run
 ```
 
----
+Orden recomendado:
+1. `auth-service`
+2. `catalog-service`
+3. `cart-service`
+4. `inventory-service`
+5. `payment-service`
+6. `order-service`
+7. `notification-service`
+8. `api-gateway`
 
-## Redis
+### 6. Levantar el frontend
 
 ```bash
-docker start shopflow-redis
+cd frontend
+npm install
+npm run dev
+```
+
+Abre [http://localhost:5173](http://localhost:5173)
+
+---
+
+##  Variables de entorno
+
+### auth-service / order-service / payment-service / inventory-service
+```properties
+POSTGRES_URL=jdbc:postgresql://localhost:5432/shopflow_auth
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=tu_password
+JWT_SECRET=tu_jwt_secret_muy_largo
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+```
+
+### catalog-service
+```properties
+MONGODB_URI=mongodb://localhost:27017/shopflow_catalog
+```
+
+### cart-service
+```properties
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### notification-service
+```properties
+MAIL_USERNAME=tucorreo@gmail.com
+MAIL_PASSWORD=tu_app_password_de_gmail
+```
+
+### Frontend (.env)
+```env
+VITE_CLOUDINARY_CLOUD_NAME=tu_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
 ```
 
 ---
 
-## Orden de Inicio
+##  Estructura del proyecto
 
-```text
-1. auth-service
-2. catalog-service
-3. cart-service
-4. inventory-service
-5. payment-service
-6. order-service
-7. api-gateway
-8. frontend
+```
+ShopFlow/
+├── api-gateway/
+├── auth-service/
+├── catalog-service/
+├── cart-service/
+├── order-service/
+├── payment-service/
+├── inventory-service/
+├── notification-service/
+└── frontend/
+    └── src/
+        ├── admin/          # Panel de administración
+        ├── api/            # Clientes HTTP
+        ├── components/     # Componentes reutilizables
+        ├── context/        # AuthContext
+        ├── layouts/        # MainLayout, AdminLayout
+        ├── pages/          # Páginas de la tienda
+        └── routes/         # AppRoutes, ProtectedRoute, AdminRoute
 ```
 
 ---
 
-#  Validación del Flujo
+##  Autor Kevin Segura Velandia
 
-1. Registrar usuario
-2. Iniciar sesión
-3. Consultar catálogo
-4. Agregar productos al carrito
-5. Realizar checkout
-6. Verificar orden creada
-7. Verificar procesamiento de Saga
-8. Confirmar actualización de inventario
+Desarrollado como proyecto de portfolio full-stack.
+
+- **Stack**: Java 17 · Spring Boot · React · Kafka · PostgreSQL · MongoDB · Redis
+- **Patrón**: Microservicios · Saga · Event-Driven Architecture
 
 ---
 
-#  Estructura del Proyecto
-
-```text
-ShopFlow
-│
-├── api-gateway
-├── auth-service
-├── catalog-service
-├── cart-service
-├── order-service
-├── payment-service
-├── inventory-service
-├── frontend
-└── README.md
-```
-
----
-
-#  Observabilidad
-
-Todos los servicios exponen:
-
-```http
-GET /actuator/health
-GET /actuator/info
-```
-
----
-
-#  Estado Actual
-
-| Componente | Estado |
-|------------|---------|
-| API Gateway | ✅ |
-| Auth Service | ✅ |
-| Catalog Service | ✅ |
-| Cart Service | ✅ |
-| Order Service | ✅ |
-| Payment Service | ✅ |
-| Inventory Service | ✅ |
-| Frontend | ✅ |
-| Kafka | ✅ |
-| Saga Pattern | ✅ |
-
----
-
-#  Próximas Mejoras
-
-- Docker Compose
-- GitHub Actions
-- Prometheus
-- Grafana
-- Kubernetes
-- Pasarela de pagos real
-- Testcontainers
-- Integración continua
-
----
-
-#  Autor
-
-Kevin Jair Segura Velandia
-
-Proyecto desarrollado para demostrar arquitectura de microservicios, comunicación asíncrona mediante Apache Kafka, autenticación JWT y patrones distribuidos utilizando Spring Boot.
-
----
-
-
+>  Si te parece útil, dale una estrella al repositorio.
