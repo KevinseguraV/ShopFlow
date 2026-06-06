@@ -32,6 +32,9 @@ public class InventoryItem {
     @Column(nullable = false)
     private int reservedQuantity;
 
+    @Column
+    private Integer lowStockThreshold = 5;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

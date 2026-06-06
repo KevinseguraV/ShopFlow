@@ -2,6 +2,7 @@ package com.shopflow.inventory_service.controller;
 
 import com.shopflow.inventory_service.dto.CreateInventoryRequest;
 import com.shopflow.inventory_service.dto.InventoryResponse;
+import com.shopflow.inventory_service.dto.UpdateInventoryRequest;
 import com.shopflow.inventory_service.service.InventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,17 @@ public class InventoryController {
         }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(inventoryService.createInventory(request));
+    }
+
+    @PutMapping("/{productId}")
+    public ResponseEntity<InventoryResponse> updateStock(
+            @PathVariable String productId,
+            @Valid @RequestBody UpdateInventoryRequest request,
+            @RequestHeader(value = "X-User-Role", defaultValue = "") String userRole) {
+        if (!userRole.equals("ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(inventoryService.updateStock(productId, request));
     }
 
     @GetMapping

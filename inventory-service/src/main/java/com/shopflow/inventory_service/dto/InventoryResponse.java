@@ -18,5 +18,6 @@ public class InventoryResponse {
     private int quantity;
     private int reservedQuantity;
     private int availableQuantity;
+    private Integer lowStockThreshold;
     private String updatedAt;
 }
