@@ -3,39 +3,52 @@ import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { getProductByIdRequest } from "../api/catalogApi";
 import { addItemRequest } from "../api/cartApi";
+import { getInventoryByProductRequest } from "../api/inventoryApi";
 import { useAuth } from "../context/AuthContext";
 
 function ProductDetail() {
   const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct]           = useState(null);
+  const [inventory, setInventory]       = useState(null);
+  const [loading, setLoading]           = useState(true);
   const [selectedVariant, setSelectedVariant] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity]         = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartFeedback, setCartFeedback] = useState(null);
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
   useEffect(() => {
-    getProductByIdRequest(id)
-      .then((data) => {
-        setProduct(data);
-        if (data.variants?.length > 0) setSelectedVariant(data.variants[0]);
-      })
-      .catch(console.error)
+    Promise.all([
+      getProductByIdRequest(id),
+      getInventoryByProductRequest(id).catch(() => null), // no falla si no hay registro
+    ]).then(([prod, inv]) => {
+      setProduct(prod);
+      setInventory(inv);
+      if (prod.variants?.length > 0) setSelectedVariant(prod.variants[0]);
+    }).catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
 
   const formatPrice = (price) =>
-    new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(price);
+    new Intl.NumberFormat("es-CO", {
+      style: "currency", currency: "COP", minimumFractionDigits: 0,
+    }).format(price);
+
+  const isOutOfStock = inventory !== null && inventory.quantity === 0;
+  const isLowStock   = inventory !== null && inventory.quantity > 0 &&
+                       inventory.quantity <= (inventory.lowStockThreshold || 5);
+
+  const maxQuantity  = inventory ? inventory.quantity : 99;
 
   const handleAddToCart = async () => {
     if (!user) { navigate("/login"); return; }
+    if (isOutOfStock) return;
     setAddingToCart(true);
     setCartFeedback(null);
     try {
       const price = selectedVariant ? selectedVariant.price : product.basePrice;
-      const slug = product.slug ?? product.id;
+      const slug  = product.slug ?? product.id;
       await addItemRequest(id, quantity, selectedVariant?.id ?? null, product.name, slug, price);
       setCartFeedback("success");
       setTimeout(() => setCartFeedback(null), 3000);
@@ -66,6 +79,7 @@ function ProductDetail() {
     <MainLayout>
       <div className="py-10">
 
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-zinc-500 text-sm mb-8">
           <button onClick={() => navigate("/products")} className="hover:text-[#FF8C42] transition">
             Productos
@@ -77,7 +91,7 @@ function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
           {/* Imagen */}
-          <div className="aspect-square bg-white/5 rounded-3xl overflow-hidden border border-white/8">
+          <div className="relative aspect-square bg-white/5 rounded-3xl overflow-hidden border border-white/8">
             {product.images?.length > 0 ? (
               <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
             ) : (
@@ -87,17 +101,49 @@ function ProductDetail() {
                 </svg>
               </div>
             )}
+            {/* Badge agotado sobre la imagen */}
+            {isOutOfStock && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="bg-red-500/90 text-white font-black text-xl px-6 py-3 rounded-2xl tracking-wide">
+                  AGOTADO
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Info */}
           <div className="flex flex-col">
-            <p className="text-[#FF8C42] text-sm font-medium uppercase tracking-wide mb-2">{product.categoryName}</p>
+            <p className="text-[#FF8C42] text-sm font-medium uppercase tracking-wide mb-2">
+              {product.categoryName}
+            </p>
             <h1 className="text-4xl font-black text-white mb-4">{product.name}</h1>
             <p className="text-zinc-400 text-lg leading-relaxed mb-6">{product.description}</p>
 
-            <div className="text-4xl font-black bg-gradient-to-r from-[#FF6B35] to-[#FFB347] bg-clip-text text-transparent mb-8">
+            <div className="text-4xl font-black bg-gradient-to-r from-[#FF6B35] to-[#FFB347] bg-clip-text text-transparent mb-4">
               {formatPrice(selectedVariant ? selectedVariant.price : product.basePrice)}
             </div>
+
+            {/* Stock badge */}
+            {inventory !== null && (
+              <div className="mb-6">
+                {isOutOfStock ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-400/10 border border-red-400/25 text-red-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                    Sin stock
+                  </span>
+                ) : isLowStock ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#FFB347]/10 border border-[#FFB347]/25 text-[#FFB347]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB347] animate-pulse" />
+                    ¡Solo quedan {inventory.quantity} unidades!
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-400/10 border border-emerald-400/25 text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    En stock · {inventory.quantity} disponibles
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Variantes */}
             {product.variants?.length > 0 && (
@@ -125,21 +171,24 @@ function ProductDetail() {
             )}
 
             {/* Cantidad */}
-            <div className="mb-8">
-              <p className="text-zinc-300 font-medium mb-3">Cantidad:</p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:border-[#FF6B35]/30 transition flex items-center justify-center text-lg"
-                >−</button>
-                <span className="text-white font-bold text-xl w-8 text-center">{quantity}</span>
-                <button
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:border-[#FF6B35]/30 transition flex items-center justify-center text-lg"
-                >+</button>
+            {!isOutOfStock && (
+              <div className="mb-8">
+                <p className="text-zinc-300 font-medium mb-3">Cantidad:</p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:border-[#FF6B35]/30 transition flex items-center justify-center text-lg"
+                  >−</button>
+                  <span className="text-white font-bold text-xl w-8 text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white hover:border-[#FF6B35]/30 transition flex items-center justify-center text-lg"
+                  >+</button>
+                </div>
               </div>
-            </div>
+            )}
 
+            {/* Feedback carrito */}
             {cartFeedback === "success" && (
               <div className="mb-4 flex items-center gap-2 text-green-400 bg-green-400/10 border border-green-400/20 rounded-2xl px-4 py-3 text-sm">
                 ✓ Producto agregado al carrito
@@ -154,12 +203,17 @@ function ProductDetail() {
               </div>
             )}
 
+            {/* Botón */}
             <button
               onClick={handleAddToCart}
-              disabled={addingToCart}
-              className="w-full bg-gradient-to-r from-[#FF6B35] to-[#FFB347] hover:opacity-90 disabled:opacity-60 transition text-black font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2"
+              disabled={addingToCart || isOutOfStock}
+              className={`w-full font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2 transition
+                ${isOutOfStock
+                  ? "bg-white/5 border border-white/10 text-zinc-600 cursor-not-allowed"
+                  : "bg-gradient-to-r from-[#FF6B35] to-[#FFB347] hover:opacity-90 disabled:opacity-60 text-black"
+                }`}
             >
-              {addingToCart ? (
+              {isOutOfStock ? "Producto agotado" : addingToCart ? (
                 <><div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" /> Agregando...</>
               ) : "Agregar al carrito"}
             </button>
